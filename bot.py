@@ -18,8 +18,9 @@ import pymongo
 import logging
 import os
 import pickle
-# from dotenv import load_dotenv
-# load_dotenv()
+from dotenv import load_dotenv
+
+load_dotenv()
 USERINFO = {}  # holds user information
 CAPTCHA_DATA = {}
 # %% ENV VARIABLES
@@ -100,7 +101,6 @@ PROCEED_MESSAGE = f"""
 ✏️ Mandatory Tasks:
 - Join our Telegram group(s)
 - Follow our Twitter page(s)
-- Join our Discord server(s)
 
 NOTE: Users found cheating would be disqualified & banned immediately.
 
@@ -222,6 +222,8 @@ def start(update, context):
         USERINFO[user.id]["ref"] = False
 
     NAME = getName(user)
+    print("Name:")
+    print(user)
 
     if(getUserInfo(user.id) != ""):
         update.message.reply_text(text="It seems like you have already joined!", reply_markup=ReplyKeyboardMarkup(reply_keyboard))
@@ -242,6 +244,7 @@ def start(update, context):
     else:
         update.message.reply_text(text=WELCOME_MESSAGE.replace("NAME", NAME),
                                   reply_markup=ReplyKeyboardMarkup([['🚀 Join Airdrop']]), parse_mode=telegram.ParseMode.MARKDOWN)
+    print("After Captcha:")
     return PROCEED
 
 
@@ -294,11 +297,11 @@ def follow_twitter(update, context):
                 [["Done"], ["Cancel"],["/restart"]]
             ))
             return FOLLOW_TWITTER
-    update.message.reply_text(text=FOLLOW_TWITTER_TEXT, parse_mode=telegram.ParseMode.MARKDOWN)
+    update.message.reply_text(text=f'🔹 Follow our Twitter page https://twitter.com/catpurr_io')
     update.message.reply_text(text="Type in the link to *your Twitter profile* to proceed.\n\nExample: \nhttps://twitter.com/example", parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardMarkup(
         [["Cancel"]]
     ))
-    return JOIN_DISCORD
+    return SUBMIT_ADDRESS
 
 
 def submit_address(update, context):
@@ -309,13 +312,12 @@ def submit_address(update, context):
         update.message.reply_text(text="Twitter Link Already Exists. Try again!\n\nExample: \nhttps://twitter.com/example", parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardMarkup(
             [["Cancel"]]
         ))
-        return JOIN_DISCORD
+        return SUBMIT_ADDRESS
     USERINFO[user.id].update({"twitter_username": update.message.text.strip()})
-    update.message.reply_text(text=JOIN_DISCORD_TEXT, parse_mode=telegram.ParseMode.MARKDOWN)
-    update.message.reply_text(text="Type in *your Discord username* to proceed.\n\nExample: \nExample#1234 \n\n_Incorrect Details? Use_ /restart _command to start over._", parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardMarkup(
+    update.message.reply_text(text=SUBMIT_BEP20_TEXT, parse_mode=telegram.ParseMode.MARKDOWN, reply_markup=ReplyKeyboardMarkup(
         [["Cancel"],["/restart"]]
     ))
-    return SUBMIT_ADDRESS
+    return END_CONVERSATION
 
 def submit_discord(update, context):
     user = update.message.from_user
@@ -460,9 +462,8 @@ Name: {name}
 Referrals: {refferals}
 {AIRDROP_NETWORK} address: {bep20Address}
 Twitter Username: {twitterUsername}
-Discord Username: {discordUsername}
 
-_Incorrect Details? Use_ /restart _command to start over._
+Incorrect Details? Use /restart command to start over.
 Don't worry, your referrals are safe.
 """
     if(reply == ""):
@@ -473,7 +474,7 @@ I'm not sure what you meant, but here is a joke for you!
 > {joke[0]}
 - {joke[1]}
 """
-    update.message.reply_text(reply, reply_markup=ReplyKeyboardMarkup(reply_keyboard), parse_mode=telegram.ParseMode.MARKDOWN)
+    update.message.reply_text(reply, reply_markup=ReplyKeyboardMarkup(reply_keyboard))
     return LOOP
 
 def error_airdrop(update, context):
@@ -529,8 +530,7 @@ states = {
     PROCEED: [MessageHandler(Filters.regex('^🚀 Join Airdrop$'), submit_details), cancelHandler,reset_handler, MessageHandler(Filters.regex(".*"),error_airdrop)],
     FOLLOW_TELEGRAM: [MessageHandler(Filters.regex('^Submit Details$'), follow_telegram), cancelHandler,reset_handler, MessageHandler(Filters.regex(".*"),error_submitdetails)],
     FOLLOW_TWITTER: [MessageHandler(Filters.regex('^Done$'), follow_twitter), cancelHandler,reset_handler, MessageHandler(Filters.regex(".*"),error_telegram)],
-    JOIN_DISCORD : [cancelHandler,MessageHandler(Filters.regex('^https://twitter.com/.*'), submit_address),reset_handler,MessageHandler(Filters.regex(".*"),error_twitter)],
-    SUBMIT_ADDRESS: [cancelHandler, MessageHandler(Filters.regex('^.*#[0-9]{4}$'), submit_discord),reset_handler,MessageHandler(Filters.regex(".*"),error_discord)],
+    SUBMIT_ADDRESS: [cancelHandler, MessageHandler(Filters.regex('^https://twitter.com/.*'), submit_address),reset_handler,MessageHandler(Filters.regex(".*"),error_twitter)],
     END_CONVERSATION: [cancelHandler, MessageHandler(Filters.regex('^0x[a-fA-F0-9]{40}$'), end_conversation),reset_handler,MessageHandler(Filters.regex(".*"),error_bsc)],
     LOOP: [reset_handler,MessageHandler(
         Filters.text, loopAnswer
